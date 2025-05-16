@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, request, jsonify, render_template
 app = Flask(__name__)
 
 @app.route("/")
-def index():
-    return "✅ Приложение запущено!"
+def home():
+    return render_template("index.html")
+
