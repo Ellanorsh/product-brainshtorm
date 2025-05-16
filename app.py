@@ -40,18 +40,19 @@ def generate_bot_responses(user_prompt: str):
     artur_answer = None
 
     for bot in bots:
-        full_prompt = f"{bot['instruction']}\n\nПользовательский запрос: {user_prompt}"
+        print(f"🟡 Генерация ответа от {bot['bot_name']}...")
 
-        # Если это Лена, добавляем ответ Артура, если он уже есть
+        # Если это Лена, добавим в prompt ответ Артура
+        messages = [{"role": "system", "content": bot["instruction"]}]
         if bot["bot_name"] == "📅 Лена" and artur_answer:
-            full_prompt += f"\n\nОтвет Артура:\n{artur_answer}"
+            user_content = f"{user_prompt}\n\nОтвет Артура:\n{artur_answer}"
+        else:
+            user_content = user_prompt
+        messages.append({"role": "user", "content": user_content})
 
         response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": bot["instruction"]},
-                {"role": "user", "content": user_prompt}
-            ],
+            model="gpt-3.5-turbo",
+            messages=messages,
             temperature=0.7
         )
         answer = response.choices[0].message.content.strip()
@@ -89,20 +90,34 @@ def index():
       const responseDiv = document.getElementById("responses");
       responseDiv.innerHTML = "⏳ Генерация ответов...";
 
-      const res = await fetch("/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea })
-      });
+      try {
+        const res = await fetch("/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idea })
+        });
 
-      const data = await res.json();
-      responseDiv.innerHTML = data.map(bot => `
-        <div>
-          <strong>${bot.bot_name}</strong>:<br/>
-          ${bot.answer}
-          <hr/>
-        </div>
-      `).join("");
+        if (!res.ok) {
+          throw new Error("Ошибка сервера: " + res.status);
+        }
+
+        const data = await res.json();
+
+        if (data.error) {
+          responseDiv.innerHTML = `<span style="color:red;">⚠️ ${data.error}</span>`;
+          return;
+        }
+
+        responseDiv.innerHTML = data.map(bot => `
+          <div>
+            <strong>${bot.bot_name}</strong>:<br/>
+            ${bot.answer}
+            <hr/>
+          </div>
+        `).join("");
+      } catch (err) {
+        responseDiv.innerHTML = `<span style="color:red;">❌ ${err.message}</span>`;
+      }
     }
   </script>
 </body>
@@ -118,11 +133,16 @@ def submit():
         if not idea:
             return jsonify({"error": "Запрос не должен быть пустым."}), 400
 
+        print("🧠 Получена идея:", idea)
         responses = generate_bot_responses(idea)
+        print("✅ Ответы сформированы")
+
         return jsonify(responses)
 
     except Exception as e:
+        print("❌ Ошибка в /submit:", str(e))
         return jsonify({"error": str(e)}), 500
 
+# --- Запуск локально ---
 if __name__ == "__main__":
     app.run(debug=True)
