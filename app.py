@@ -116,4 +116,13 @@ def submit():
         data = request.get_json()
         idea = data.get("idea", "").strip()
         if not idea:
-            return jsonify({"error":
+            return jsonify({"error": "Запрос не должен быть пустым."}), 400
+
+        responses = generate_bot_responses(idea)
+        return jsonify(responses)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
