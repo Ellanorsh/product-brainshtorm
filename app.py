@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, make_response
 import os
 
-app = Flask(__name__)  # создаём Flask-приложение
+app = Flask(__name__)
 
 print("TEMPLATE_FOLDER:", os.path.abspath("templates"))
 
@@ -12,6 +12,5 @@ def home():
     response.headers['Content-Type'] = 'text/html'
     return response
 
-# запуск локально (Heroku игнорирует этот блок, но он нужен для отладки)
 if __name__ == "__main__":
     app.run(debug=True)
