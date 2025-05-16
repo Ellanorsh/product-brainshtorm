@@ -1,42 +1,13 @@
-from flask import Flask, request, jsonify, render_template
-import openai
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from flask import Flask, render_template, make_response
 
 app = Flask(__name__)
 
-bots = [
-    {"name": "GrowthBot", "system_prompt": "Ты эксперт по росту цифровых продуктов."},
-    {"name": "UXBot", "system_prompt": "Ты UX-исследователь, оцениваешь пользовательские сценарии."}
-]
-
 @app.route("/")
 def home():
-    return render_template("index.html")
-
-@app.route("/submit", methods=["POST"])
-def submit():
-    data = request.get_json()
-    idea = data.get("idea")
-    results = []
-
-    for bot in bots:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": bot["system_prompt"]},
-                {"role": "user", "content": idea}
-            ]
-        )
-        results.append({
-            "bot_name": bot["name"],
-            "answer": response.choices[0].message.content
-        })
-
-    return jsonify(results)
+    html = render_template("index.html")
+    response = make_response(html)
+    response.headers["Content-Type"] = "text/html"
+    return response
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
