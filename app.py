@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, render_template
-
-app = Flask(__name__)
+import os
+print("TEMPLATE_FOLDER:", os.path.abspath("templates"))
 
 @app.route("/")
 def home():
-    return render_template("index.html")  # <-- рендерим темплейт
+    print("⚡️ Рендер шаблона запущен")
+    return render_template("index.html")
