@@ -7,48 +7,51 @@
   <meta name="Generator" content="Cocoa HTML Writer">
   <meta name="CocoaVersion" content="2575.4">
   <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; -webkit-text-stroke: #000000}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; -webkit-text-stroke: #000000; min-height: 14.0px}
+    span.s1 {font-kerning: none}
   </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Product Brainstorm&lt;/title&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;💡 Отправить продуктовую идею&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;textarea id="idea" rows="4" cols="60" placeholder="Введите вашу идею здесь..."&gt;&lt;/textarea&gt;&lt;br&gt;&lt;br&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;button onclick="sendIdea()"&gt;Отправить&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;h2&gt;Ответы ботов:&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="responses"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function sendIdea() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const idea = document.getElementById("idea").value;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const responseDiv = document.getElementById("responses");</p>
-<p class="p1"><span class="Apple-converted-space">      </span>responseDiv.innerHTML = "⏳ Идёт генерация ответов...";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>const res = await fetch("/submit", {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>method: "POST",</p>
-<p class="p1"><span class="Apple-converted-space">        </span>headers: { "Content-Type": "application/json" },</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body: JSON.stringify({ idea })</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>const data = await res.json();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>responseDiv.innerHTML = data.map(bot =&gt; `</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;strong&gt;${bot.bot_name}&lt;/strong&gt;:&lt;br/&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>${bot.answer}</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;hr/&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>`).join("");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;head&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;title&gt;Product Brainstorm&lt;/title&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;body&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;h1&gt;💡 Отправить продуктовую идею&lt;/h1&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;textarea id="idea" rows="4" cols="60" placeholder="Введите вашу идею здесь..."&gt;&lt;/textarea&gt;&lt;br&gt;&lt;br&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;button onclick="sendIdea()"&gt;Отправить&lt;/button&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;h2&gt;Ответы ботов:&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div id="responses"&gt;&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>{% raw %}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>async function sendIdea() {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const idea = document.getElementById("idea").value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const responseDiv = document.getElementById("responses");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>responseDiv.innerHTML = "⏳ Идёт генерация ответов...";</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const res = await fetch("/submit", {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>method: "POST",</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>headers: { "Content-Type": "application/json" },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>body: JSON.stringify({ idea })</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const data = await res.json();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>responseDiv.innerHTML = data.map(bot =&gt; `</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;strong&gt;${bot.bot_name}&lt;/strong&gt;:&lt;br/&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>${bot.answer}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;hr/&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>`).join("");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>{% endraw %}</span></p>
+<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
 </body>
 </html>
