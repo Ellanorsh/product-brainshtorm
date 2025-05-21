@@ -2,15 +2,15 @@
 from flask import Flask, request, jsonify, render_template_string
 from openai import OpenAI
 import os
-import concurrent.futures
 
 app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+# --- Боты ---
 bots = [
     {
         "bot_name": "🤓 Вика",
-        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и найти подкрепляющую статистику, которая позволит улучшить изначальную гипотезу. Например: если гипотеза включает какое-то улучшение и изменение, поискать исследования, которые бы подтверждали, что такие изменения хорошо отражаются на продукте и увеличивают ключевые метрики (указать какие)"
+        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и найти подкрепляющую статистику, которая позволит улучшить изначальную гипотезу. Например: если гипотеза включает какое-то улучшение и  изменение, поискать исследования, которые бы подтверждали, что такие изменения хорошо отражаются на продукте и увеличивают ключевые метрики (указать какие)"
     },
     {
         "bot_name": "🕵️‍♀️ Настя",
@@ -34,81 +34,75 @@ bots = [
     }
 ]
 
-def ask_openai(instruction, user_prompt):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": instruction},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.7
-    )
-    return response.choices[0].message.content.strip()
-
-def generate_bot_responses(user_prompt):
-    responses = {}
-
-    def handle_bot(bot):
-        print(f"🟡 Генерация ответа от {bot['bot_name']}")
-        if bot["bot_name"] == "📅 Лена":
-            while not all(x in responses for x in ["👨‍💻 Артур", "🕵️‍♀️ Настя", "🔍 Свати"]):
-                pass
-            combined_context = f"{user_prompt}\n\nОтвет Артура: {responses['👨‍💻 Артур']}\n\nОтвет Насти: {responses['🕵️‍♀️ Настя']}\n\nОтвет Свати: {responses['🔍 Свати']}"
-            return bot["bot_name"], ask_openai(bot["instruction"], combined_context)
-        else:
-            return bot["bot_name"], ask_openai(bot["instruction"], user_prompt)
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_bot = {executor.submit(handle_bot, bot): bot for bot in bots}
-        for future in concurrent.futures.as_completed(future_to_bot):
-            bot_name, answer = future.result()
-            responses[bot_name] = answer
-
-    return [{"bot_name": bot, "answer": answer} for bot, answer in responses.items()]
-
 @app.route("/", methods=["GET"])
 def index():
     return render_template_string("""
 <!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8"><title>Product Brainstorm</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>Product Brainstorm</title>
+</head>
 <body>
   <h1>💡 Отправить продуктовую идею</h1>
   <textarea id="idea" rows="4" cols="60" placeholder="Введите вашу идею здесь..."></textarea><br><br>
   <button onclick="sendIdea()">Отправить</button>
   <h2>Ответы ботов:</h2>
   <div id="responses"></div>
+
   <script>
+    const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
+
     async function sendIdea() {
       const idea = document.getElementById("idea").value;
       const responseDiv = document.getElementById("responses");
-      responseDiv.innerHTML = "⏳ Генерация ответов...";
-      const res = await fetch("/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea })
-      });
-      const data = await res.json();
-      responseDiv.innerHTML = data.map(bot => `
-        <div><strong>${bot.bot_name}</strong>:<br/>${bot.answer}<hr/></div>
-      `).join("");
+      responseDiv.innerHTML = "⏳ Генерация ответов...<br><br>";
+
+      for (const bot of bots) {
+        const res = await fetch("/generate_for_bot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idea, bot_id: bot })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          responseDiv.innerHTML += `<strong>${bot}</strong>: ❌ Ошибка: ${data.error}<hr/>`;
+        } else {
+          responseDiv.innerHTML += `<strong>${data.bot_name}</strong>:<br/>${data.answer}<hr/>`;
+        }
+      }
     }
   </script>
 </body>
 </html>
 """)
 
-@app.route("/submit", methods=["POST"])
-def submit():
+@app.route("/generate_for_bot", methods=["POST"])
+def generate_for_bot():
     try:
         data = request.get_json()
         idea = data.get("idea", "").strip()
-        if not idea:
-            return jsonify({"error": "Запрос не должен быть пустым."}), 400
-        print(f"📩 Получен запрос: {idea}")
-        responses = generate_bot_responses(idea)
-        print("✅ Ответы отправлены.")
-        return jsonify(responses)
+        bot_id = data.get("bot_id")
+
+        bot = next((b for b in bots if b["bot_name"] == bot_id), None)
+        if not bot:
+            return jsonify({"error": "Unknown bot"}), 400
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": bot["instruction"]},
+                {"role": "user", "content": idea}
+            ],
+            temperature=0.7
+        )
+
+        return jsonify({
+            "bot_name": bot["bot_name"],
+            "answer": response.choices[0].message.content.strip()
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
