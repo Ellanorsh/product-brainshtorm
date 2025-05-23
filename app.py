@@ -88,6 +88,36 @@ def index():
       margin-bottom: 6px;
       color: #333;
     }
+    .copy-btn {
+      background-color: #10a37f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .copy-btn:hover {
+      background-color: #0f9774;
+    }
+    #copy-all-btn {
+      background-color: #10a37f;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: block;
+      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #copy-all-btn:hover {
+      background-color: #0f9774;
+    }
   </style>
 </head>
 <body>
@@ -97,6 +127,7 @@ def index():
     <button onclick="sendIdea()">Отправить</button>
 
     <div id="responses"></div>
+    <button id="copy-all-btn">Copy All</button>
   </div>
 
   <script>
@@ -138,8 +169,102 @@ def index():
           responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
         } else {
           responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${format(data.answer)}`;
+          const copyButton = document.createElement('button');
+          copyButton.innerText = 'Copy';
+          copyButton.classList.add('copy-btn');
+          // Inline styles removed, will be handled by CSS
+          responseBlocks[i].appendChild(copyButton);
+
+          copyButton.addEventListener('click', () => {
+            const responseClone = responseBlocks[i].cloneNode(true);
+            // Remove the bot label and the button itself from the clone
+            responseClone.querySelector('.bot-label').remove();
+            responseClone.querySelector('.copy-btn').remove();
+            
+            const textToCopy = responseClone.innerText.trim();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+              copyButton.innerText = 'Copied!';
+              setTimeout(() => {
+                copyButton.innerText = 'Copy';
+              }, 2000);
+            }).catch(err => {
+              console.error('Failed to copy text: ', err);
+              // Optionally, provide feedback to the user that copy failed
+            });
+          });
         }
       }
+    }
+
+    function copyAllConversation() {
+      const ideaText = document.getElementById("idea").value;
+      if (!ideaText && document.querySelectorAll(".response").length === 0) {
+        alert("Nothing to copy!");
+        return;
+      }
+
+      let conversationText = "Initial Idea:\n" + ideaText;
+      const responseBlocks = document.querySelectorAll(".response");
+      const copyAllBtn = document.getElementById('copy-all-btn');
+
+      responseBlocks.forEach(block => {
+        const botLabelElement = block.querySelector('.bot-label');
+        if (!botLabelElement) return; // Skip if no bot label (e.g. initial loading message)
+
+        const botName = botLabelElement.innerText.replace(':', '').trim();
+        
+        // Clone the block to safely remove elements for text extraction
+        const blockClone = block.cloneNode(true);
+        blockClone.querySelector('.bot-label').remove();
+        const copyBtnInClone = blockClone.querySelector('.copy-btn');
+        if (copyBtnInClone) {
+          copyBtnInClone.remove();
+        }
+        
+        // Handle cases where response might just be the "⏳ Ждем ответ..."
+        const answerText = blockClone.innerText.trim();
+        if (answerText === "⏳ Ждем ответ..." || answerText === "" || answerText.startsWith("❌ Ошибка:")) {
+            conversationText += `\n\n${botName}:\n${answerText}`;
+        } else {
+            conversationText += `\n\n${botName}:\n${answerText}`;
+        }
+      });
+
+      navigator.clipboard.writeText(conversationText).then(() => {
+        const originalText = copyAllBtn.innerText;
+        copyAllBtn.innerText = 'Copied All!';
+        setTimeout(() => {
+          copyAllBtn.innerText = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy all text: ', err);
+        alert('Failed to copy conversation.');
+      });
+    }
+    
+    // Setup event listener for the copy all button
+    // Ensure the button is present in the DOM before attaching listener
+    // One way is to put this script at the end of body or use DOMContentLoaded
+    // For this template string, it's fine as is because script runs after HTML.
+    // However, to be super safe, especially if script was in <head>:
+    // document.addEventListener('DOMContentLoaded', () => {
+    //  const copyAllBtn = document.getElementById('copy-all-btn');
+    //  if(copyAllBtn) {
+    //    copyAllBtn.onclick = copyAllConversation;
+    //  }
+    // });
+    // Simplified for now as the button is defined before this part of the script.
+    // Wait for the DOM to be fully loaded before attaching event listeners
+    // This is a more robust way
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('copy-all-btn');
+            if(btn) btn.onclick = copyAllConversation;
+        });
+    } else {
+        // DOMContentLoaded has already fired
+        const btn = document.getElementById('copy-all-btn');
+        if(btn) btn.onclick = copyAllConversation;
     }
   </script>
 </body>
