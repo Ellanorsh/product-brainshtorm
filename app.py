@@ -159,7 +159,7 @@ def index():
       document.body.removeChild(textarea);
       alert("Скопировано!");
     }
-    </script>
+  </script>
     
 </body>
 </html>
