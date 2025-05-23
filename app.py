@@ -124,7 +124,7 @@ def index():
   <div class="container">
     <h1>💡 Отправить продуктовую идею</h1>
     <textarea id="idea" rows="4" placeholder="Введите вашу идею здесь..."></textarea>
-    <button onclick="sendIdea()">Отправить</button>
+    <button id="sendIdeaBtn">Отправить</button>
 
     <div id="responses"></div>
     <button id="copy-all-btn">Copy All</button>
@@ -269,30 +269,19 @@ def index():
       });
     }
     
-    // Setup event listener for the copy all button
-    // Ensure the button is present in the DOM before attaching listener
-    // One way is to put this script at the end of body or use DOMContentLoaded
-    // For this template string, it's fine as is because script runs after HTML.
-    // However, to be super safe, especially if script was in <head>:
-    // document.addEventListener('DOMContentLoaded', () => {
-    //  const copyAllBtn = document.getElementById('copy-all-btn');
-    //  if(copyAllBtn) {
-    //    copyAllBtn.onclick = copyAllConversation;
-    //  }
-    // });
-    // Simplified for now as the button is defined before this part of the script.
-    // Wait for the DOM to be fully loaded before attaching event listeners
-    // This is a more robust way
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            const btn = document.getElementById('copy-all-btn');
-            if(btn) btn.onclick = copyAllConversation;
-        });
-    } else {
-        // DOMContentLoaded has already fired
-        const btn = document.getElementById('copy-all-btn');
-        if(btn) btn.onclick = copyAllConversation;
-    }
+    
+    // Consolidated event listener setup
+    document.addEventListener('DOMContentLoaded', function() {
+      const sendButton = document.getElementById('sendIdeaBtn');
+      if (sendButton) {
+        sendButton.addEventListener('click', sendIdea);
+      }
+
+      const copyAllButton = document.getElementById('copy-all-btn');
+      if (copyAllButton) {
+        copyAllButton.addEventListener('click', copyAllConversation);
+      }
+    });
   </script>
 </body>
 </html>
