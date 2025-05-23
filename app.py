@@ -36,7 +36,7 @@ bots = [
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template_string('''
+    return render_template_string("""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -97,73 +97,15 @@ def index():
     <button onclick="sendIdea()">Отправить</button>
 
     <div id="responses"></div>
+<div id="copy-all-container" style="display:none; margin-top: 20px;">
+  <button onclick="copyAll()" style="background-color:#444;">📋 Скопировать всё</button>
+</div>
   </div>
 
-  <script src="/static/script.js">
-    const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
-
-    function format(text) {
-      // преобразует список и абзацы
-      const html = text
-        .replace(/\\n{2,}/g, '</p><p>')
-        .replace(/\\n/g, '<br>')
-        .replace(/(\\d+\\.\\s.+?)(?=\\d+\\.\\s|$)/gs, (match) => {
-          const items = match.trim().split(/\\n/).map(item => `<li>${item.replace(/^\\d+\\.\\s/, '')}</li>`).join('');
-          return `<ol>${items}</ol>`;
-        });
-      return "<p>" + html + "</p>";
-    }
-
-    async function sendIdea() {
-      const idea = document.getElementById("idea").value;
-      const responseDiv = document.getElementById("responses");
-      responseDiv.innerHTML = "⏳ Генерация ответов...";
-
-      responseDiv.innerHTML = "";
-      for (const bot of bots) {
-        responseDiv.innerHTML += `<div class='response'><div class='bot-label'>${bot}:</div>⏳ Ждем ответ...</div>`;
-      }
-
-      for (let i = 0; i < bots.length; i++) {
-        const bot = bots[i];
-        const res = await fetch("/generate_for_bot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idea, bot_id: bot })
-        });
-
-        const data = await res.json();
-        const responseBlocks = document.querySelectorAll(".response");
-        if (data.error) {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
-        } else {
-          
-          const formatted = format(data.answer);
-          const plainText = data.answer.replace(/"/g, '&quot;').replace(/'/g, "&#039;");
-          responseBlocks[i].innerHTML = `
-            <div class='bot-label'>${data.bot_name}:</div>
-            <div class="formatted-answer">${formatted}</div>
-            <button onclick="copyText('${plainText}')" style="margin-top:10px;">📋 Скопировать</button>
-          `;
-    
-        }
-      }
-    }
-  
-    function copyText(text) {
-      const textarea = document.createElement("textarea");
-      textarea.value = text.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "");
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      alert("Скопировано!");
-    }
-  </script>
-    
+  <script src="/static/script.js"></script>
 </body>
 </html>
-''')
+""")
 
 @app.route("/generate_for_bot", methods=["POST"])
 def generate_for_bot():
