@@ -36,7 +36,7 @@ bots = [
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template_string("""
+    return render_template_string('''
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -163,7 +163,7 @@ def index():
     
 </body>
 </html>
-""")
+''')
 
 @app.route("/generate_for_bot", methods=["POST"])
 def generate_for_bot():
