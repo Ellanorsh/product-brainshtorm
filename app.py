@@ -99,7 +99,7 @@ def index():
     <div id="responses"></div>
   </div>
 
-  <script>
+  <script src="/static/script.js">
     const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
 
     function format(text) {
