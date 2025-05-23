@@ -62,48 +62,50 @@ def index():
   </div>
 
   <script>
+    const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
+    let fullText = "";
+
     async function sendIdea() {
       const idea = document.getElementById("idea").value;
       const responseDiv = document.getElementById("responses");
       const copyAllBtn = document.getElementById("copy-all");
-      responseDiv.innerHTML = "⏳ Генерация ответов...";
+      responseDiv.innerHTML = "";
       copyAllBtn.style.display = "none";
+      fullText = `💡 Запрос:\n${idea}\n\n`;
 
-      const res = await fetch("/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea })
-      });
+      for (let i = 0; i < bots.length; i++) {
+        const botName = bots[i];
+        const botBox = document.createElement("div");
+        botBox.className = "bot-block";
+        botBox.innerHTML = `<div class="bot-name">${botName}</div><pre id="bot-answer-${i}">⏳...</pre>`;
+        responseDiv.appendChild(botBox);
 
-      const data = await res.json();
-      if (data.error) {
-        responseDiv.innerHTML = `<div style="color:red;">Ошибка: ${data.error}</div>`;
-        return;
+        try {
+          const res = await fetch("/generate_for_bot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idea: idea, bot_id: botName })
+          });
+          const data = await res.json();
+          const answer = data.answer || "Ошибка ответа";
+          document.getElementById(`bot-answer-${i}`).innerText = answer;
+
+          const copyBtn = document.createElement("button");
+          copyBtn.innerText = "📋 Скопировать";
+          copyBtn.className = "copy-btn";
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(answer).then(() => alert("Скопировано!"));
+          };
+          botBox.appendChild(copyBtn);
+
+          fullText += `${botName}:\n${answer}\n\n`;
+        } catch (err) {
+          document.getElementById(`bot-answer-${i}`).innerText = "Ошибка запроса";
+        }
       }
-
-      let fullText = `💡 Запрос:\n${idea}\n\n`;
-
-      responseDiv.innerHTML = data.map((bot, index) => {
-        const botText = `${bot.bot_name}:\n${bot.answer}`;
-        fullText += `${botText}\n\n`;
-        return `
-          <div class="bot-block">
-            <div class="bot-name">${bot.bot_name}</div>
-            <pre id="bot-answer-${index}" style="white-space:pre-wrap;">${bot.answer}</pre>
-            <button class="copy-btn" onclick="copyText('bot-answer-${index}')">📋 Скопировать</button>
-          </div>
-        `;
-      }).join("");
 
       window.fullCopyText = fullText.trim();
       copyAllBtn.style.display = "inline-block";
-    }
-
-    function copyText(elementId) {
-      const text = document.getElementById(elementId).innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Скопировано!");
-      });
     }
 
     function copyAll() {
