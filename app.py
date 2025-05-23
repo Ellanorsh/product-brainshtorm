@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template_string
 from openai import OpenAI
 import os
@@ -6,37 +5,37 @@ import os
 app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# --- Боты ---
 bots = [
     {
         "bot_name": "🤓 Вика",
-        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и найти подкрепляющую статистику, которая позволит улучшить изначальную гипотезу. Например: если гипотеза включает какое-то улучшение и  изменение, поискать исследования, которые бы подтверждали, что такие изменения хорошо отражаются на продукте и увеличивают ключевые метрики (указать какие)"
+        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и найти подкрепляющую статистику, которая позволит улучшить изначальную гипотезу."
     },
     {
         "bot_name": "🕵️‍♀️ Настя",
-        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и понять, как должна выглядеть предлагаемая функция. Основываясь на этом понимании тебе нужно подготовить список существующих конкурирующих или похожих сервисов, где такая функция хорошо реализована. К каждому сервису дать небольшой комментарий, почему ты считаешь, что эта функция там хорошо реализована и есть ли у неё дополнительные уникальные особенности."
+        "instruction": "Ты продуктовый менеджер и твоя задача подготовить список конкурентов с похожей функцией, описать особенности реализации."
     },
     {
         "bot_name": "👨‍💻 Артур",
-        "instruction": "Ты технический лидер проекта и твоя задача проанализировать изначальный запрос и оценить его с точки зрения реализуемости и дать оценку по требуемым техническим ресурсам."
+        "instruction": "Ты технический лидер. Проанализируй реализуемость, ресурсы и роли."
     },
     {
         "bot_name": "🔍 Свати",
-        "instruction": "Ты технический аналитик и твоя задача проанализировать изначальный запрос и продумать все возможные корнер кейсы и необходимые дополнительные сценарии, которые нужно поддержать."
+        "instruction": "Ты технический аналитик. Продумай корнер-кейсы и дополнительные сценарии."
     },
     {
         "bot_name": "📅 Лена",
-        "instruction": "Ты менеджер проекта и твоя задача проанализировать изначальный запрос, ответы Артура, Насти и Свати и составить два плана проекта (MVP и полный)."
+        "instruction": "Ты менеджер проекта. Проанализируй изначальный запрос, ответы Артура, Насти и Свати и составь два плана: MVP и full."
     },
     {
         "bot_name": "🧠 Денис",
-        "instruction": "Ты ведущий разработчик. Проанализируй изначальный запрос и дай техническую критику, почему гипотеза может быть плохой, ненужной или реализована лучше."
+        "instruction": "Ты ведущий разработчик. Дай критическую оценку, почему идея может быть плохой или не нужна."
     }
 ]
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
-    return render_template_string("""<!DOCTYPE html>
+    return render_template_string("""{% raw %}
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -62,99 +61,99 @@ def index():
     <button id="copy-all" style="display:none;" onclick="copyAll()">📋 Скопировать всё</button>
   </div>
 
-<script>
-  const bots = {{ bots|tojson }};
-  let allAnswers = [];
+  <script>
+    async function sendIdea() {
+      const idea = document.getElementById("idea").value;
+      const responseDiv = document.getElementById("responses");
+      const copyAllBtn = document.getElementById("copy-all");
+      responseDiv.innerHTML = "⏳ Генерация ответов...";
+      copyAllBtn.style.display = "none";
 
-  async function sendIdea() {
-    const idea = document.getElementById("idea").value.trim();
-    const responseDiv = document.getElementById("responses");
-    const copyAllBtn = document.getElementById("copy-all");
-    allAnswers = [];
-
-    if (!idea) {
-      alert("Введите идею.");
-      return;
-    }
-
-    responseDiv.innerHTML = "";
-    copyAllBtn.style.display = "none";
-
-    for (let i = 0; i < bots.length; i++) {
-      const bot = bots[i];
-      const botBlock = document.createElement("div");
-      botBlock.className = "bot-block";
-      botBlock.innerHTML = \`
-        <div class="bot-name">\${bot.bot_name}</div>
-        <pre id="bot-answer-\${i}" style="white-space:pre-wrap;">⏳ Генерация ответа...</pre>
-      \`;
-      responseDiv.appendChild(botBlock);
-
-      const res = await fetch("/generate_for_bot", {
+      const res = await fetch("/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: idea, bot_id: bot.bot_name })
+        body: JSON.stringify({ idea })
       });
+
       const data = await res.json();
       if (data.error) {
-        document.getElementById("bot-answer-" + i).innerText = "Ошибка: " + data.error;
-      } else {
-        document.getElementById("bot-answer-" + i).innerText = data.answer;
-        allAnswers.push(\`\${bot.bot_name}:
-\${data.answer}\`);
-        const btn = document.createElement("button");
-        btn.className = "copy-btn";
-        btn.innerText = "📋 Скопировать";
-        btn.onclick = () => {
-          navigator.clipboard.writeText(\`\${bot.bot_name}:
-\${data.answer}\`);
-          alert("Скопировано!");
-        };
-        botBlock.appendChild(btn);
+        responseDiv.innerHTML = `<div style="color:red;">Ошибка: ${data.error}</div>`;
+        return;
       }
 
-      if (i === bots.length - 1) {
-        copyAllBtn.style.display = "inline-block";
-      }
+      let fullText = `💡 Запрос:\n${idea}\n\n`;
+
+      responseDiv.innerHTML = data.map((bot, index) => {
+        const botText = `${bot.bot_name}:\n${bot.answer}`;
+        fullText += `${botText}\n\n`;
+        return `
+          <div class="bot-block">
+            <div class="bot-name">${bot.bot_name}</div>
+            <pre id="bot-answer-${index}" style="white-space:pre-wrap;">${bot.answer}</pre>
+            <button class="copy-btn" onclick="copyText('bot-answer-${index}')">📋 Скопировать</button>
+          </div>
+        `;
+      }).join("");
+
+      window.fullCopyText = fullText.trim();
+      copyAllBtn.style.display = "inline-block";
     }
-  }
 
-  function copyAll() {
-    const idea = document.getElementById("idea").value;
-    const fullText = "💡 Запрос:\n" + idea + "\n\n" + allAnswers.join("\n\n");
-    navigator.clipboard.writeText(fullText).then(() => {
-      alert("Все ответы скопированы!");
-    });
-  }
-</script>
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Скопировано!");
+      });
+    }
+
+    function copyAll() {
+      navigator.clipboard.writeText(window.fullCopyText).then(() => {
+        alert("Все ответы скопированы!");
+      });
+    }
+  </script>
 </body>
-</html>""", bots=bots)
+</html>
+{% endraw %}""")
 
-@app.route("/generate_for_bot", methods=["POST"])
-def generate_for_bot():
+@app.route("/submit", methods=["POST"])
+def submit():
     try:
         data = request.get_json()
         idea = data.get("idea", "").strip()
-        bot_id = data.get("bot_id")
+        if not idea:
+            return jsonify({"error": "Запрос не может быть пустым"})
 
-        bot = next((b for b in bots if b["bot_name"] == bot_id), None)
-        if not bot:
-            return jsonify({"error": "Unknown bot"}), 400
+        responses = []
+        artur_resp, nastya_resp, swati_resp = "", "", ""
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": bot["instruction"]},
-                {"role": "user", "content": idea}
-            ],
-            temperature=0.7
-        )
+        for bot in bots:
+            instruction = bot["instruction"]
+            if bot["bot_name"] == "📅 Лена":
+                instruction += (
+                    f"\n\nОтвет Артура:\n{artur_resp}\n\n"
+                    f"Ответ Насти:\n{nastya_resp}\n\n"
+                    f"Ответ Свати:\n{swati_resp}"
+                )
 
-        return jsonify({
-            "bot_name": bot["bot_name"],
-            "answer": response.choices[0].message.content.strip()
-        })
+            res = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": instruction},
+                    {"role": "user", "content": idea}
+                ]
+            )
+            answer = res.choices[0].message.content.strip()
+            if bot["bot_name"] == "👨‍💻 Артур":
+                artur_resp = answer
+            elif bot["bot_name"] == "🕵️‍♀️ Настя":
+                nastya_resp = answer
+            elif bot["bot_name"] == "🔍 Свати":
+                swati_resp = answer
 
+            responses.append({"bot_name": bot["bot_name"], "answer": answer})
+
+        return jsonify(responses)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
