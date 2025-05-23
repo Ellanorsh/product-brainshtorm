@@ -137,11 +137,30 @@ def index():
         if (data.error) {
           responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
         } else {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${format(data.answer)}`;
+          
+          const formatted = format(data.answer);
+          const plainText = data.answer.replace(/"/g, '&quot;').replace(/'/g, "&#039;");
+          responseBlocks[i].innerHTML = `
+            <div class='bot-label'>${data.bot_name}:</div>
+            <div class="formatted-answer">${formatted}</div>
+            <button onclick="copyText('${plainText}')" style="margin-top:10px;">📋 Скопировать</button>
+          `;
+    
         }
       }
     }
-  </script>
+  
+    function copyText(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "");
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      alert("Скопировано!");
+    }
+    </script>
+    
 </body>
 </html>
 """)
