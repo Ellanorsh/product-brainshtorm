@@ -148,7 +148,7 @@ def index():
     async function sendIdea() {
       const idea = document.getElementById("idea").value;
       const responseDiv = document.getElementById("responses");
-      responseDiv.innerHTML = "⏳ Генерация ответов...";
+      // Removed redundant global loading message.
 
       responseDiv.innerHTML = "";
       for (const bot of bots) {
@@ -157,41 +157,68 @@ def index():
 
       for (let i = 0; i < bots.length; i++) {
         const bot = bots[i];
-        const res = await fetch("/generate_for_bot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idea, bot_id: bot })
-        });
-
-        const data = await res.json();
+        // It's better to get responseBlocks once before the loop if possible, 
+        // but since we re-query it inside, let's ensure it's always up-to-date if DOM changes.
+        // However, for this specific update logic, getting it once per iteration is fine.
         const responseBlocks = document.querySelectorAll(".response");
-        if (data.error) {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
-        } else {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${format(data.answer)}`;
-          const copyButton = document.createElement('button');
-          copyButton.innerText = 'Copy';
-          copyButton.classList.add('copy-btn');
-          // Inline styles removed, will be handled by CSS
-          responseBlocks[i].appendChild(copyButton);
 
-          copyButton.addEventListener('click', () => {
-            const responseClone = responseBlocks[i].cloneNode(true);
-            // Remove the bot label and the button itself from the clone
-            responseClone.querySelector('.bot-label').remove();
-            responseClone.querySelector('.copy-btn').remove();
-            
-            const textToCopy = responseClone.innerText.trim();
-            navigator.clipboard.writeText(textToCopy).then(() => {
-              copyButton.innerText = 'Copied!';
-              setTimeout(() => {
-                copyButton.innerText = 'Copy';
-              }, 2000);
-            }).catch(err => {
-              console.error('Failed to copy text: ', err);
-              // Optionally, provide feedback to the user that copy failed
-            });
+        try {
+          const res = await fetch("/generate_for_bot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idea, bot_id: bot })
           });
+
+          // Check for HTTP errors that fetch doesn't throw by default (e.g., 404, 500)
+          if (!res.ok) {
+            const errorText = await res.text(); // Try to get error text from response
+            console.error("Fetch HTTP error for bot:", bot, "Status:", res.status, "Response:", errorText);
+            responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ HTTP error: ${res.status}. Details in console.`;
+            continue; // Move to the next bot
+          }
+
+          const data = await res.json();
+          
+          if (data.error) {
+            // This handles errors returned by our backend in JSON format
+            console.error("Server error for bot:", bot, data.error);
+            responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
+          } else {
+            const originalAnswer = data.answer;
+            let formattedAnswerHtml;
+            try {
+              formattedAnswerHtml = format(originalAnswer);
+            } catch (formatError) {
+              console.error("Error in format() for bot:", bot, formatError, "Input text:", originalAnswer);
+              responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Error formatting response. Details in console.`;
+              continue; // Skip to next bot if formatting fails
+            }
+            
+            responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${formattedAnswerHtml}`;
+            const copyButton = document.createElement('button');
+            copyButton.innerText = 'Copy';
+            copyButton.classList.add('copy-btn');
+            responseBlocks[i].appendChild(copyButton);
+
+            copyButton.addEventListener('click', () => {
+              const responseClone = responseBlocks[i].cloneNode(true);
+              responseClone.querySelector('.bot-label').remove();
+              responseClone.querySelector('.copy-btn').remove();
+              const textToCopy = responseClone.innerText.trim();
+              navigator.clipboard.writeText(textToCopy).then(() => {
+                copyButton.innerText = 'Copied!';
+                setTimeout(() => { copyButton.innerText = 'Copy'; }, 2000);
+              }).catch(err => {
+                console.error('Failed to copy text: ', err);
+              });
+            });
+          }
+        } catch (fetchOrJsonError) { // Catches network errors, or res.json() parsing errors
+          console.error("Fetch/JSON parsing error for bot:", bot, fetchOrJsonError);
+          if (responseBlocks && responseBlocks[i]) { 
+             responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Network error or failed to parse response. Details in console.`;
+          }
+          // continue; // Already at the end of this iteration's try-catch, loop will continue
         }
       }
     }
