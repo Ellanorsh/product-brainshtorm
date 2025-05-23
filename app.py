@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify, render_template_string
 from openai import OpenAI
 import os
+import re
 
 app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -36,51 +37,139 @@ bots = [
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template_string("{{ HTML TEMPLATE HERE - omitted for brevity }}")
+    return render_template_string("""{% raw %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Brainstorm</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 2rem; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; }
+    .bot-block { margin-bottom: 2rem; padding: 1rem; background: #f9f9f9; border-left: 4px solid #ccc; border-radius: 4px; position: relative; }
+    .bot-name { font-weight: bold; margin-bottom: 0.5rem; }
+    .copy-btn { position: absolute; top: 1rem; right: 1rem; background: #eee; border: none; padding: 5px 10px; cursor: pointer; }
+    .copy-btn:hover { background: #ddd; }
+    #copy-all { margin-top: 1rem; background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+    #copy-all:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💡 Отправить продуктовую идею</h1>
+    <textarea id="idea" rows="4" style="width:100%;" placeholder="Введите вашу идею здесь..."></textarea><br><br>
+    <button onclick="sendIdea()">Отправить</button>
+    <h2>Ответы ботов:</h2>
+    <div id="responses"></div>
+    <button id="copy-all" style="display:none;" onclick="copyAll()">📋 Скопировать всё</button>
+  </div>
+
+<script>
+  async function sendIdea() {
+    const idea = document.getElementById("idea").value;
+    const responseDiv = document.getElementById("responses");
+    const copyAllBtn = document.getElementById("copy-all");
+    responseDiv.innerHTML = "⏳ Генерация ответов...";
+    copyAllBtn.style.display = "none";
+
+    const res = await fetch("/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea })
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      responseDiv.innerHTML = `<div style="color:red;">Ошибка: ${data.error}</div>`;
+      return;
+    }
+
+    let fullText = `💡 Запрос:\n${idea}\n\n`;
+
+    responseDiv.innerHTML = data.map((bot, index) => {
+      const botText = `${bot.bot_name}:\n${bot.answer}`;
+      fullText += `${botText}\n\n`;
+      return `
+        <div class="bot-block">
+          <div class="bot-name">${bot.bot_name}</div>
+          <pre id="bot-answer-${index}" style="white-space:pre-wrap;">${bot.answer}</pre>
+          <button class="copy-btn" onclick="copyText('bot-answer-${index}')">📋 Скопировать</button>
+        </div>
+      `;
+    }).join("");
+
+    window.fullCopyText = fullText.trim();
+    copyAllBtn.style.display = "inline-block";
+  }
+
+  function copyText(elementId) {
+    const text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Скопировано!");
+    });
+  }
+
+  function copyAll() {
+    navigator.clipboard.writeText(window.fullCopyText).then(() => {
+      alert("Все ответы скопированы!");
+    });
+  }
+</script>
+</body>
+</html>
+{% endraw %}""")
 
 @app.route("/submit", methods=["POST"])
 def submit():
     try:
         data = request.get_json()
         idea = data.get("idea", "").strip()
-        if not idea:
-            return jsonify({"error": "Пустой запрос"}), 400
 
-        results = []
-        artur_answer = ""
-        nastya_answer = ""
-        swati_answer = ""
+        if not idea:
+            return jsonify({"error": "Запрос не может быть пустым"})
+
+        responses = []
+        artur_resp, nastya_resp, swati_resp = "", "", ""
 
         for bot in bots:
-            prompt = bot["instruction"]
-            if bot["bot_name"] == "📅 Лена":
-                prompt += f"\n\nОтвет Артура:\n{artur_answer}\n\nОтвет Насти:\n{nastya_answer}\n\nОтвет Свати:\n{swati_answer}"
+            instruction = bot["instruction"]
 
-            response = client.chat.completions.create(
+            if bot["bot_name"] == "📅 Лена":
+                instruction += (
+                    f"
+
+Ответ Артура:
+{artur_resp}
+
+"
+                    f"Ответ Насти:
+{nastya_resp}
+
+"
+                    f"Ответ Свати:
+{swati_resp}"
+                )
+
+            print(f"🟡 Генерация ответа от {bot['bot_name']}")
+            res = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": prompt},
+                    {"role": "system", "content": instruction},
                     {"role": "user", "content": idea}
-                ],
-                temperature=0.7
+                ]
             )
-
-            answer = response.choices[0].message.content.strip()
-
+            answer = res.choices[0].message.content.strip()
             if bot["bot_name"] == "👨‍💻 Артур":
-                artur_answer = answer
+                artur_resp = answer
             elif bot["bot_name"] == "🕵️‍♀️ Настя":
-                nastya_answer = answer
+                nastya_resp = answer
             elif bot["bot_name"] == "🔍 Свати":
-                swati_answer = answer
+                swati_resp = answer
 
-            results.append({
-                "bot_name": bot["bot_name"],
-                "answer": answer
-            })
+            responses.append({"bot_name": bot["bot_name"], "answer": answer})
 
-        return jsonify(results)
-
+        print("✅ Ответы отправлены.")
+        return jsonify(responses)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
