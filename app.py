@@ -136,19 +136,10 @@ def submit():
 
             if bot["bot_name"] == "📅 Лена":
                 instruction += (
-                    f"
-
-Ответ Артура:
-{artur_resp}
-
-"
-                    f"Ответ Насти:
-{nastya_resp}
-
-"
-                    f"Ответ Свати:
-{swati_resp}"
-                )
+        "\nОтвет Артура:\n" + artur_resp +
+        "\n\nОтвет Насти:\n" + nastya_resp +
+        "\n\nОтвет Свати:\n" + swati_resp
+    )
 
             print(f"🟡 Генерация ответа от {bot['bot_name']}")
             res = client.chat.completions.create(
