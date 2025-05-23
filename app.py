@@ -36,6 +36,8 @@ bots = [
 
 @app.route("/", methods=["GET"])
 def index():
+@app.route("/", methods=["GET"])
+def index():
     return render_template_string("""
 <!DOCTYPE html>
 <html lang="ru">
@@ -43,105 +45,77 @@ def index():
   <meta charset="UTF-8">
   <title>Product Brainstorm</title>
   <style>
-    body {
-      background-color: #f7f7f8;
-      font-family: 'Segoe UI', sans-serif;
-      padding: 40px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.05);
-    }
-    textarea {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 16px;
-    }
-    button {
-      background-color: #10a37f;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0f9774;
-    }
-    .response {
-      background-color: #f0f0f0;
-      padding: 16px;
-      border-radius: 8px;
-      margin-top: 20px;
-      white-space: pre-wrap;
-    }
-    .bot-label {
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: #333;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 2rem; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; }
+    .bot-block { margin-bottom: 2rem; padding: 1rem; background: #f9f9f9; border-left: 4px solid #ccc; border-radius: 4px; position: relative; }
+    .bot-name { font-weight: bold; margin-bottom: 0.5rem; }
+    .copy-btn { position: absolute; top: 1rem; right: 1rem; background: #eee; border: none; padding: 5px 10px; cursor: pointer; }
+    .copy-btn:hover { background: #ddd; }
+    #copy-all { margin-top: 1rem; background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+    #copy-all:hover { background: #0056b3; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>💡 Отправить продуктовую идею</h1>
-    <textarea id="idea" rows="4" placeholder="Введите вашу идею здесь..."></textarea>
+    <textarea id="idea" rows="4" style="width:100%;" placeholder="Введите вашу идею здесь..."></textarea><br><br>
     <button onclick="sendIdea()">Отправить</button>
-
+    <h2>Ответы ботов:</h2>
     <div id="responses"></div>
+    <button id="copy-all" style="display:none;" onclick="copyAll()">📋 Скопировать всё</button>
   </div>
 
-  <script>
-    const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
+<script>
+  async function sendIdea() {
+    const idea = document.getElementById("idea").value;
+    const responseDiv = document.getElementById("responses");
+    const copyAllBtn = document.getElementById("copy-all");
+    responseDiv.innerHTML = "⏳ Генерация ответов...";
+    copyAllBtn.style.display = "none";
 
-    function format(text) {
-      // преобразует список и абзацы
-      const html = text
-        .replace(/\\n{2,}/g, '</p><p>')
-        .replace(/\\n/g, '<br>')
-        .replace(/(\\d+\\.\\s.+?)(?=\\d+\\.\\s|$)/gs, (match) => {
-          const items = match.trim().split(/\\n/).map(item => `<li>${item.replace(/^\\d+\\.\\s/, '')}</li>`).join('');
-          return `<ol>${items}</ol>`;
-        });
-      return "<p>" + html + "</p>";
+    const res = await fetch("/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea })
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      responseDiv.innerHTML = `<div style="color:red;">Ошибка: ${data.error}</div>`;
+      return;
     }
 
-    async function sendIdea() {
-      const idea = document.getElementById("idea").value;
-      const responseDiv = document.getElementById("responses");
-      responseDiv.innerHTML = "⏳ Генерация ответов...";
+    let fullText = `💡 Запрос:\n${idea}\n\n`;
 
-      responseDiv.innerHTML = "";
-      for (const bot of bots) {
-        responseDiv.innerHTML += `<div class='response'><div class='bot-label'>${bot}:</div>⏳ Ждем ответ...</div>`;
-      }
+    responseDiv.innerHTML = data.map((bot, index) => {
+      const botText = `${bot.bot_name}:\n${bot.answer}`;
+      fullText += `${botText}\n\n`;
+      return `
+        <div class="bot-block">
+          <div class="bot-name">${bot.bot_name}</div>
+          <pre id="bot-answer-${index}" style="white-space:pre-wrap;">${bot.answer}</pre>
+          <button class="copy-btn" onclick="copyText('bot-answer-${index}')">📋 Скопировать</button>
+        </div>
+      `;
+    }).join("");
 
-      for (let i = 0; i < bots.length; i++) {
-        const bot = bots[i];
-        const res = await fetch("/generate_for_bot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idea, bot_id: bot })
-        });
+    window.fullCopyText = fullText.trim();
+    copyAllBtn.style.display = "inline-block";
+  }
 
-        const data = await res.json();
-        const responseBlocks = document.querySelectorAll(".response");
-        if (data.error) {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
-        } else {
-          responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${format(data.answer)}`;
-        }
-      }
-    }
-  </script>
+  function copyText(elementId) {
+    const text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Скопировано!");
+    });
+  }
+
+  function copyAll() {
+    navigator.clipboard.writeText(window.fullCopyText).then(() => {
+      alert("Все ответы скопированы!");
+    });
+  }
+</script>
 </body>
 </html>
 """)
