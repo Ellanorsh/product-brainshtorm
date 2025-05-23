@@ -82,33 +82,11 @@ def index():
       border-radius: 8px;
       margin-top: 20px;
       white-space: pre-wrap;
-      position: relative;
     }
     .bot-label {
       font-weight: bold;
       margin-bottom: 6px;
       color: #333;
-    }
-    .copy-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #e0e0e0;
-      border: none;
-      padding: 6px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      border-radius: 6px;
-    }
-    .copy-btn:hover {
-      background: #d5d5d5;
-    }
-    #copy-all {
-      margin-top: 20px;
-      background: #007bff;
-    }
-    #copy-all:hover {
-      background: #0056b3;
     }
   </style>
 </head>
@@ -119,14 +97,13 @@ def index():
     <button onclick="sendIdea()">Отправить</button>
 
     <div id="responses"></div>
-    <button id="copy-all" style="display:none;" onclick="copyAll()">📋 Скопировать всё</button>
   </div>
 
   <script>
     const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
-    let fullText = "";
 
     function format(text) {
+      // преобразует список и абзацы
       const html = text
         .replace(/\\n{2,}/g, '</p><p>')
         .replace(/\\n/g, '<br>')
@@ -140,67 +117,34 @@ def index():
     async function sendIdea() {
       const idea = document.getElementById("idea").value;
       const responseDiv = document.getElementById("responses");
-      const copyAllBtn = document.getElementById("copy-all");
+      responseDiv.innerHTML = "⏳ Генерация ответов...";
+
       responseDiv.innerHTML = "";
-      fullText = `💡 Запрос:\n${idea}\n\n`;
-      copyAllBtn.style.display = "none";
-
       for (const bot of bots) {
-        const block = document.createElement("div");
-        block.className = "response";
-        block.innerHTML = `<div class='bot-label'>${bot}:</div><div class='content'>⏳ Ждем ответ...</div>`;
-        responseDiv.appendChild(block);
+        responseDiv.innerHTML += `<div class='response'><div class='bot-label'>${bot}:</div>⏳ Ждем ответ...</div>`;
       }
-
-      const blocks = document.querySelectorAll(".response");
 
       for (let i = 0; i < bots.length; i++) {
         const bot = bots[i];
-        const block = blocks[i].querySelector(".content");
+        const res = await fetch("/generate_for_bot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idea, bot_id: bot })
+        });
 
-        try {
-          const res = await fetch("/generate_for_bot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idea, bot_id: bot })
-          });
-
-          const data = await res.json();
-          if (data.error) {
-            block.innerHTML = `❌ Ошибка: ${data.error}`;
-          } else {
-            block.innerHTML = format(data.answer);
-
-            const plainText = `${bot}:\n${data.answer}\n\n`;
-            fullText += plainText;
-
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "copy-btn";
-            copyBtn.textContent = "📋 Скопировать";
-            copyBtn.onclick = () => {
-              navigator.clipboard.writeText(`${bot}:\n${data.answer}`).then(() =>
-                alert("Скопировано!")
-              );
-            };
-            blocks[i].appendChild(copyBtn);
-          }
-        } catch (err) {
-          block.innerHTML = "Ошибка запроса";
+        const data = await res.json();
+        const responseBlocks = document.querySelectorAll(".response");
+        if (data.error) {
+          responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
+        } else {
+          responseBlocks[i].innerHTML = `<div class='bot-label'>${data.bot_name}:</div>${format(data.answer)}`;
         }
       }
-
-      window.fullCopyText = fullText.trim();
-      copyAllBtn.style.display = "inline-block";
-    }
-
-    function copyAll() {
-      navigator.clipboard.writeText(window.fullCopyText).then(() =>
-        alert("Все ответы скопированы!")
-      );
     }
   </script>
 </body>
 </html>
+""")
 
 @app.route("/generate_for_bot", methods=["POST"])
 def generate_for_bot():
