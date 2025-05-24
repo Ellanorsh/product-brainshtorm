@@ -1,4 +1,4 @@
-const bots = ["🤓 Вика", "🕵️‍♀️ Настя", "👨‍💻 Артур", "🔍 Свати", "📅 Лена", "🧠 Денис"];
+const bots = ["🤓 Vika", "🕵️‍♀️ Nastya", "👨‍💻 Artur", "🔍 Swati", "📅 Elena", "🧠 Denis"];
 
 function format(text) {
   const html = text
@@ -17,7 +17,7 @@ async function sendIdea() {
   responseDiv.innerHTML = "";
 
   for (const bot of bots) {
-    responseDiv.innerHTML += `<div class='response'><div class='bot-label'>${bot}:</div>⏳ Ждем ответ...</div>`;
+    responseDiv.innerHTML += `<div class='response'><div class='bot-label'>${bot}:</div>⏳ Waiting for reply...</div>`;
   }
 
   for (let i = 0; i < bots.length; i++) {
@@ -31,13 +31,13 @@ async function sendIdea() {
     const data = await res.json();
     const responseBlocks = document.querySelectorAll(".response");
     if (data.error) {
-      responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
+      responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Error: ${data.error}`;
     } else {
       const formatted = format(data.answer);
       responseBlocks[i].innerHTML = `
         <div class='bot-label'>${data.bot_name}:</div>
         <div class="formatted-answer">${formatted}</div>
-        <button onclick="copyText(\`${data.answer}\`)" style="margin-top:10px;">📋 Скопировать</button>
+        <button onclick="copyText(\`${data.answer}\`)" style="margin-top:10px;">📋 Copy</button>
       `;
       if (i === bots.length - 1) {
         document.getElementById("copy-all-container").style.display = "block";
@@ -53,13 +53,13 @@ function copyText(text) {
   textarea.select();
   document.execCommand("copy");
   document.body.removeChild(textarea);
-  alert("Скопировано!");
+  alert("Copied!");
 }
 
 function copyAll() {
   const idea = document.getElementById("idea").value.trim();
   const responses = document.querySelectorAll(".response");
-  let result = `📝 Идея:\n${idea}\n\n`;
+  let result = `📝 Idea:\n${idea}\n\n`;
 
   responses.forEach(el => {
     const botName = el.querySelector(".bot-label").innerText;
@@ -73,5 +73,5 @@ function copyAll() {
   textarea.select();
   document.execCommand("copy");
   document.body.removeChild(textarea);
-  alert("Все ответы скопированы!");
+  alert("All replies copied!");
 }
