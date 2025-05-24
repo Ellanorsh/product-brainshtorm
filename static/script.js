@@ -34,22 +34,44 @@ async function sendIdea() {
       responseBlocks[i].innerHTML = `<div class='bot-label'>${bot}:</div>❌ Ошибка: ${data.error}`;
     } else {
       const formatted = format(data.answer);
-      const plainText = data.answer.replace(/"/g, '&quot;').replace(/'/g, "&#039;");
       responseBlocks[i].innerHTML = `
         <div class='bot-label'>${data.bot_name}:</div>
         <div class="formatted-answer">${formatted}</div>
-        <button onclick="copyText('${plainText}')" style="margin-top:10px;">📋 Скопировать</button>
+        <button onclick="copyText(\`${data.answer}\`)" style="margin-top:10px;">📋 Скопировать</button>
       `;
+      if (i === bots.length - 1) {
+        document.getElementById("copy-all-container").style.display = "block";
+      }
     }
   }
 }
 
 function copyText(text) {
   const textarea = document.createElement("textarea");
-  textarea.value = text.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "");
+  textarea.value = text;
   document.body.appendChild(textarea);
   textarea.select();
   document.execCommand("copy");
   document.body.removeChild(textarea);
   alert("Скопировано!");
+}
+
+function copyAll() {
+  const idea = document.getElementById("idea").value.trim();
+  const responses = document.querySelectorAll(".response");
+  let result = `📝 Идея:\n${idea}\n\n`;
+
+  responses.forEach(el => {
+    const botName = el.querySelector(".bot-label").innerText;
+    const text = el.querySelector(".formatted-answer")?.innerText || "";
+    result += `${botName}\n${text}\n\n`;
+  });
+
+  const textarea = document.createElement("textarea");
+  textarea.value = result.trim();
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
+  alert("Все ответы скопированы!");
 }
