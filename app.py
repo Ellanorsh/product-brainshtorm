@@ -6,31 +6,32 @@ import re
 app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# --- Боты ---
+# --- Bots ---
 bots = [
     {
-        "bot_name": "🤓 Вика",
-        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и найти подкрепляющую статистику, которая позволит улучшить изначальную гипотезу..."
+        "bot_name": "🤓 Vika",
+        "instruction": "You are a product manager. Your task is to analyze the initial request and find supporting statistics that can help improve the original hypothesis. For example: if the hypothesis includes a suggested improvement or change, look for studies that confirm such changes have a positive impact on the product and lead to growth in key metrics (specify which metrics)."
     },
     {
-        "bot_name": "🕵️‍♀️ Настя",
-        "instruction": "Ты продуктовый менеджер и твоя задача проанализировать изначальный запрос и понять, как должна выглядеть предлагаемая функция..."
+        "bot_name": "🕵️‍♀️ Nastya",
+        "instruction": "You are a product manager. Your task is to analyze the initial request and understand what the proposed feature should look like. Based on that understanding, prepare a list of existing competing or similar services where this feature is well implemented. For each service, add a brief comment explaining why you believe the feature is well implemented there and whether it has any additional unique aspects.
+For example: if the request describes changes to a registration form, an ideal result would be a list of services with clear and user-friendly registration forms, highlighting that one service has great UI solutions, another has helpful guidance for users, and a third has a clean and minimalistic design that keeps the user focused."
     },
     {
-        "bot_name": "👨‍💻 Артур",
-        "instruction": "Ты технический лидер проекта и твоя задача проанализировать изначальный запрос и оценить его с точки зрения реализуемости..."
+        "bot_name": "👨‍💻 Artur",
+        "instruction": "You are the technical lead of the project. Your task is to analyze the initial request and evaluate it in terms of feasibility, and provide an assessment of the required technical resources (e.g., whether third-party integrations are needed, how many developers and of what kind are required, whether DevOps, designers, analysts, etc. are needed). Identify any critical technical edge cases that must be considered to make the implementation plan complete."
     },
     {
-        "bot_name": "🔍 Свати",
-        "instruction": "Ты технический аналитик и твоя задача проанализировать изначальный запрос и продумать все возможные корнер кейсы..."
+        "bot_name": "🔍 Swati",
+        "instruction": "You are a technical analyst. Your task is to analyze the initial request and think through all possible edge cases and additional scenarios that should be supported."
     },
     {
-        "bot_name": "📅 Лена",
-        "instruction": "Ты менеджер проекта и твоя задача проанализировать изначальный запрос, ответы всех остальных ботов и составить два плана проекта..."
+        "bot_name": "📅 Elena",
+        "instruction": "You are the project manager. Your task is to analyze the initial request, review the responses from all other bots, and create two project plans (rough roadmaps): one for an MVP covering only the happy path, and another covering all scenarios and edge cases. Both plans must include preliminary estimates for the number of developer hours, testing, and any other specialists required."
     },
     {
-        "bot_name": "🧠 Денис",
-        "instruction": "Ты ведущий разработчик. Твоя задача проанализировать изначальный запрос и с технической и практической стороны дать конструктивную критику..."
+        "bot_name": "🧠 Denis",
+        "instruction": "You are the lead developer. Your task is to analyze the initial request and provide constructive criticism from a technical and practical perspective. What problems do you see in the request? Why is it poorly formulated? Why is the idea not viable? Why might the current solution be sufficient or even better?"
     }
 ]
 
@@ -92,13 +93,13 @@ def index():
 </head>
 <body>
   <div class="container">
-    <h1>💡 Отправить продуктовую идею</h1>
-    <textarea id="idea" rows="4" placeholder="Введите вашу идею здесь..."></textarea>
-    <button onclick="sendIdea()">Отправить</button>
+    <h1>💡 Submit a product feature idea</h1>
+    <textarea id="idea" rows="4" placeholder="Submit your idea here..."></textarea>
+    <button onclick="sendIdea()">Submit</button>
 
     <div id="responses"></div>
 <div id="copy-all-container" style="display:none; margin-top: 20px;">
-  <button onclick="copyAll()" style="background-color:#444;">📋 Скопировать всё</button>
+  <button onclick="copyAll()" style="background-color:#444;">📋 Copy all</button>
 </div>
   </div>
 
